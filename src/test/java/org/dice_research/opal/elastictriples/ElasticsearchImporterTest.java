@@ -3,7 +3,6 @@ package org.dice_research.opal.elastictriples;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
-import java.net.URISyntaxException;
 
 import org.apache.http.HttpHost;
 import org.junit.After;
@@ -32,11 +31,16 @@ public class ElasticsearchImporterTest {
 
 	public static String elasticsearchIndex = "elastictriples3";
 
-	public static File file = new File("/tmp/test.nt");
-	public static String language = "N-Triples";
+	public static File file =
+			// new File("/tmp/test.nt");
+			new File("/home/adi/DICE/Data/OPAL/edp/5617dbe0_4542_479e_942b_ce36525e6315.ttl");
+	public static String language =
+			// "N-Triples";
+			"Turtle";
 
 	private ElasticsearchImporter elasticsearchImporter;
 
+	@SuppressWarnings("resource")
 	@Before
 	public void setUp() throws Exception {
 
@@ -61,10 +65,6 @@ public class ElasticsearchImporterTest {
 		}
 	}
 
-	public ElasticsearchImporterTest() throws URISyntaxException {
-
-	}
-
 	@Test
 	public void testNtripleFileImport() throws Exception {
 		Assume.assumeTrue(EXECUTE_NTRIPLE_FILE_IMPORT);
@@ -83,6 +83,7 @@ public class ElasticsearchImporterTest {
 	protected void importFile(File file, String language) throws Exception {
 		Assume.assumeTrue(file.canRead());
 
+		// TODO: Has to be done everywhere
 		elasticsearchImporter.setIndex(elasticsearchIndex);
 
 		if (!elasticsearchImporter.indexExists()) {

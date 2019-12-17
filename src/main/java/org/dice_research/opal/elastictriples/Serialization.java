@@ -37,13 +37,19 @@ public class Serialization {
 
 	protected StringReader stringReader;
 
-	public Model deserialize(String lines) {
-		stringReader = new StringReader(lines);
+	/**
+	 * Transforms N-Triple lines to model.
+	 */
+	public Model deserialize(String nTripleLines) {
+		stringReader = new StringReader(nTripleLines);
 		Model model = ModelFactory.createDefaultModel();
 		model.read(stringReader, "", STR_LANG);
 		return model;
 	}
 
+	/**
+	 * Transforms model to triples for import.
+	 */
 	public List<Triple> serialize(Model model) throws Exception {
 		List<Triple> triples = new LinkedList<>();
 
