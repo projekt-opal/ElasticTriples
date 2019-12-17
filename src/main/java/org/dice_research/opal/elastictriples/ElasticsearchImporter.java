@@ -60,7 +60,7 @@ public class ElasticsearchImporter extends Elasticsearch {
 			if (bulk.finalRequest()) {
 				counter += handleResponse(bulk.getBulkResponse());
 			}
-			System.out.println(counter);
+			System.out.println("Counter: " + counter + " " + getClass().getName());
 			return this;
 
 		} else {

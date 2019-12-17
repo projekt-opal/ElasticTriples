@@ -5,12 +5,14 @@ import java.io.File;
 import org.apache.http.HttpHost;
 import org.dice_research.opal.elastictriples.ElasticsearchImporter;
 
+/**
+ * Imports OPAL source portal data.
+ *
+ * @author Adrian Wilke
+ */
 public class OpalImport {
 
-	public static File file = new File("/tmp/test.nt");
-	public static String language = "N-Triples";
-
-	public void opalImport() throws Exception {
+	public void opalImport(File file, String language) throws Exception {
 
 		long time = System.currentTimeMillis();
 
@@ -46,6 +48,8 @@ public class OpalImport {
 	 * Example.
 	 */
 	public static void main(String[] args) throws Exception {
-		new OpalImport().opalImport();
+		File file = new File("/tmp/test.nt");
+		String language = "N-Triples";
+		new OpalImport().opalImport(file, language);
 	}
 }

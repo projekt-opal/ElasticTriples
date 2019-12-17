@@ -83,7 +83,6 @@ public class ElasticsearchImporterTest {
 	protected void importFile(File file, String language) throws Exception {
 		Assume.assumeTrue(file.canRead());
 
-		// TODO: Has to be done everywhere
 		elasticsearchImporter.setIndex(elasticsearchIndex);
 
 		if (!elasticsearchImporter.indexExists()) {

@@ -3,11 +3,15 @@ package org.dice_research.opal.elastictriples;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.http.HttpHost;
 import org.apache.jena.vocabulary.DCAT;
 import org.elasticsearch.action.search.ClearScrollRequest;
+import org.elasticsearch.action.search.MultiSearchRequest;
+import org.elasticsearch.action.search.MultiSearchResponse;
+import org.elasticsearch.action.search.MultiSearchResponse.Item;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -27,23 +31,26 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
  */
 public class ElasticsearchQuery extends Elasticsearch {
 
-	public int getDatasetGraph(String datasetUri, StringBuilder nTripleLines) throws IOException {
+	public int getDatasetGraph(List<String> datasetUris, StringBuilder nTripleLines) throws IOException {
 		// TODO Temporary recursive implementation for dataset graph
 		int calls = 1;
 
+		// Get source catalog(s)
 		if (nTripleLines.length() == 0) {
-			MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery("object", datasetUri);
+			List<SearchRequest> searchRequests = new LinkedList<>();
+			for (String datasetUri : datasetUris) {
+				MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery("object", datasetUri);
 
-			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-			sourceBuilder.query(matchPhraseQueryBuilder);
-			sourceBuilder.size(10000);
+				SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+				sourceBuilder.query(matchPhraseQueryBuilder);
+				sourceBuilder.size(10000);
 
-			SearchRequest searchRequest = new SearchRequest(getIndex());
-			searchRequest.source(sourceBuilder);
+				SearchRequest searchRequest = new SearchRequest(getIndex());
+				searchRequest.source(sourceBuilder);
+				searchRequests.add(searchRequest);
+			}
 
-			SearchResponse searchResponse = getRestHighLevelClient().search(searchRequest, RequestOptions.DEFAULT);
-
-			for (SearchHit hit : searchResponse.getHits()) {
+			for (SearchHit hit : multiSearchQuery(searchRequests)) {
 				Triple triple = new Triple();
 				triple.subject = (String) hit.getSourceAsMap().get("subject");
 				triple.predicate = (String) hit.getSourceAsMap().get("predicate");
@@ -53,18 +60,15 @@ public class ElasticsearchQuery extends Elasticsearch {
 			}
 		}
 
-		MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery("subject", datasetUri);
+		// Create search requests
+		List<SearchRequest> searchRequests = new LinkedList<>();
+		for (String datasetUri : datasetUris) {
+			searchRequests.add(createSearchRequest(datasetUri));
+		}
 
-		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-		sourceBuilder.query(matchPhraseQueryBuilder);
-		sourceBuilder.size(10000);
-
-		SearchRequest searchRequest = new SearchRequest(getIndex());
-		searchRequest.source(sourceBuilder);
-
-		SearchResponse searchResponse = getRestHighLevelClient().search(searchRequest, RequestOptions.DEFAULT);
-
-		for (SearchHit hit : searchResponse.getHits()) {
+		// Extract data
+		List<String> objects = new LinkedList<>();
+		for (SearchHit hit : multiSearchQuery(searchRequests)) {
 			Triple triple = new Triple();
 			triple.subject = (String) hit.getSourceAsMap().get("subject");
 			triple.predicate = (String) hit.getSourceAsMap().get("predicate");
@@ -72,7 +76,12 @@ public class ElasticsearchQuery extends Elasticsearch {
 			nTripleLines.append(triple.getNtriples());
 			nTripleLines.append(System.lineSeparator());
 
-			calls += getDatasetGraph(triple.object, nTripleLines);
+			objects.add(triple.object);
+		}
+
+		// Recursively create graph
+		if (!objects.isEmpty()) {
+			calls += getDatasetGraph(objects, nTripleLines);
 		}
 
 		return calls;
@@ -90,6 +99,38 @@ public class ElasticsearchQuery extends Elasticsearch {
 			}
 		}
 		return datasets;
+	}
+
+	public SearchRequest createSearchRequest(String subject) {
+		// TODO Temporary implementation for subject search
+		MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery("subject", subject);
+
+		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+		sourceBuilder.query(matchPhraseQueryBuilder);
+		sourceBuilder.size(10000);
+
+		SearchRequest searchRequest = new SearchRequest(getIndex());
+		searchRequest.source(sourceBuilder);
+
+		return searchRequest;
+	}
+
+	public List<SearchHit> multiSearchQuery(List<SearchRequest> searchRequests) throws IOException {
+		MultiSearchRequest request = new MultiSearchRequest();
+		for (SearchRequest searchRequest : searchRequests) {
+			request.add(searchRequest);
+		}
+
+		MultiSearchResponse response = getRestHighLevelClient().msearch(request, RequestOptions.DEFAULT);
+
+		List<SearchHit> searchHits = new LinkedList<>();
+		for (Item item : response.getResponses()) {
+			if (item.getFailure() != null) {
+				System.err.println("Failure: " + item.getFailureMessage() + " " + getClass().getName());
+			}
+			searchHits.addAll(Arrays.asList(item.getResponse().getHits().getHits()));
+		}
+		return searchHits;
 	}
 
 	public List<SearchHit> scrollQuery(QueryBuilder queryBuilder) throws IOException {

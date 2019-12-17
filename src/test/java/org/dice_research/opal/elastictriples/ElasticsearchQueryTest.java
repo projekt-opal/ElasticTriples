@@ -2,6 +2,7 @@ package org.dice_research.opal.elastictriples;
 
 import static org.junit.Assume.assumeTrue;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.http.HttpHost;
@@ -75,7 +76,9 @@ public class ElasticsearchQueryTest {
 		String dataset = "http://projekt-opal.de/dataset/_mcloudde_baysisstraennetz";
 		dataset = "http://projekt-opal.de/dataset/https___ckan_govdata_de_1e19b5f3_5258_558c_8744_400e1727cab9";
 		StringBuilder nTripleLines = new StringBuilder();
-		int calls = elasticsearchQuery.getDatasetGraph(dataset, nTripleLines);
+		List<String> datasetRequestUris = new LinkedList<>();
+		datasetRequestUris.add(dataset);
+		int calls = elasticsearchQuery.getDatasetGraph(datasetRequestUris, nTripleLines);
 		System.out.println(nTripleLines);
 		System.out.println("Request time: " + (System.currentTimeMillis() - time) / 1000f + " seconds");
 
