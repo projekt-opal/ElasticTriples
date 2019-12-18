@@ -1,7 +1,6 @@
 package org.dice_research.opal.elastictriples.opal;
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.jena.rdf.model.Model;
@@ -15,10 +14,9 @@ import org.dice_research.opal.elastictriples.Serialization;
  */
 public class OpalQuery {
 
-	public static Model getDatasetGraph(ElasticsearchQuery elasticsearchQuery, List<String> datasetUris)
-			throws IOException {
+	public static Model getDatasetGraph(ElasticsearchQuery elasticsearchQuery, String datasetUri) throws IOException {
 		StringBuilder nTripleLines = new StringBuilder();
-		elasticsearchQuery.getDatasetGraph(datasetUris, nTripleLines);
+		elasticsearchQuery.getDatasetGraphIterative(datasetUri, nTripleLines);
 		return new Serialization().deserialize(nTripleLines.toString());
 	}
 
@@ -32,30 +30,24 @@ public class OpalQuery {
 		OpalConfig.elasticsearchHostname = "localhost";
 		OpalConfig.elasticsearchPort = 9200;
 
-		OpalConfig.elasticsearchIndex = "elastictriples-test";
+		OpalConfig.elasticsearchIndex = "elastictriples-edp";
 
-		// Try to connect
-		ElasticsearchQuery elasticsearchQuery = null;
-		try {
-			elasticsearchQuery = OpalConfig.get();
+		// Get all dataset URIs
+		List<String> datasetUris = null;
+		try (ElasticsearchQuery elasticsearchQuery = OpalConfig.get()) {
+			datasetUris = elasticsearchQuery.getAllDatasets();
+			System.out.println("Number of datasets: " + datasetUris.size());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
-		// Get all dataset URIs
-		List<String> datasetUris = elasticsearchQuery.getAllDatasets();
-		System.out.println("Number of datasets: " + datasetUris.size());
-
 		// Get a dataset graph
-		int numberOfDatasetsToRequest = 10;
-		List<String> datasetRequestUris = new LinkedList<>();
-		for (int i = 0; i < Math.min(numberOfDatasetsToRequest, datasetUris.size()); i++) {
-			System.out.println("Will request: " + datasetUris.get(i));
-			datasetRequestUris.add(datasetUris.get(i));
+		try (ElasticsearchQuery elasticsearchQuery = OpalConfig.reset()) {
+			Model datasetGraph = OpalQuery.getDatasetGraph(OpalConfig.get(), datasetUris.get(0));
+			System.out.println("Resulting graph size: " + datasetGraph.size());
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		Model datasetGraph = OpalQuery.getDatasetGraph(OpalConfig.get(), datasetRequestUris);
-		System.out.println("Resulting graph size: " + datasetGraph.size());
 
-		elasticsearchQuery.close();
 	}
 }

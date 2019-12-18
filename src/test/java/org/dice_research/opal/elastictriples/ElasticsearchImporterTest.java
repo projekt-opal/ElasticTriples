@@ -29,14 +29,10 @@ public class ElasticsearchImporterTest {
 	public static String elasticsearchHostname = "localhost";
 	public static int elasticsearchPort = 9200;
 
-	public static String elasticsearchIndex = "elastictriples3";
+	public static String elasticsearchIndex = "elastictriples-edp-deen";
 
-	public static File file =
-			// new File("/tmp/test.nt");
-			new File("/home/adi/DICE/Data/OPAL/edp/5617dbe0_4542_479e_942b_ce36525e6315.ttl");
-	public static String language =
-			// "N-Triples";
-			"Turtle";
+	public static File file = new File("/tmp/opal-rdf/edp-filtered.nt");
+	public static String language = "N-Triples";
 
 	private ElasticsearchImporter elasticsearchImporter;
 
@@ -86,7 +82,7 @@ public class ElasticsearchImporterTest {
 		elasticsearchImporter.setIndex(elasticsearchIndex);
 
 		if (!elasticsearchImporter.indexExists()) {
-			elasticsearchImporter.createIndex();
+			elasticsearchImporter.createIndex(true);
 		}
 
 		elasticsearchImporter.importFile(file, language);

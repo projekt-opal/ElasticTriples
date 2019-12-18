@@ -31,9 +31,73 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
  */
 public class ElasticsearchQuery extends Elasticsearch {
 
-	public int getDatasetGraph(List<String> datasetUris, StringBuilder nTripleLines) throws IOException {
+	public float getDatasetGraphIterative(String datasetUri, StringBuilder nTripleLines) throws IOException {
 		// TODO Temporary recursive implementation for dataset graph
-		int calls = 1;
+		float counterRequests = 0f;
+		int counterMulti = 0;
+
+		List<SearchRequest> searchRequests = new LinkedList<>();
+
+		// Get source catalog(s)
+		if (nTripleLines.length() == 0) {
+			MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery("object", datasetUri);
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			sourceBuilder.query(matchPhraseQueryBuilder);
+			sourceBuilder.size(10000);
+
+			SearchRequest searchRequest = new SearchRequest(getIndex());
+			searchRequest.source(sourceBuilder);
+			searchRequests.add(searchRequest);
+		}
+
+		List<String> requestedResources = new LinkedList<>();
+		List<String> newResources = new LinkedList<>();
+
+		newResources.add(datasetUri);
+		while (!newResources.isEmpty()) {
+
+			// Create new requests
+			for (String newResource : newResources) {
+				searchRequests.add(createSearchRequest(newResource));
+				requestedResources.add(newResource);
+			}
+			newResources.clear();
+
+			// Request
+			for (SearchHit hit : multiSearchQuery(searchRequests)) {
+				Triple triple = new Triple();
+				triple.subject = (String) hit.getSourceAsMap().get("subject");
+				triple.predicate = (String) hit.getSourceAsMap().get("predicate");
+				triple.object = (String) hit.getSourceAsMap().get("object");
+
+				// Add results
+				nTripleLines.append(triple.getNtriples());
+				nTripleLines.append(System.lineSeparator());
+
+				// Prepare next iteration
+				if (!requestedResources.contains(triple.object)) {
+					if (!Triple.isLiteral(triple.object)) {
+						newResources.add(triple.object);
+					}
+				}
+			}
+			counterRequests += searchRequests.size();
+			counterMulti++;
+			searchRequests.clear();
+		}
+
+		return counterRequests + (1f * counterMulti / 1000);
+	}
+
+	@Deprecated
+	/**
+	 * Use {@link #getDatasetGraphIterative(String, StringBuilder)} instead.
+	 */
+	public float getDatasetGraphRecursive(List<String> datasetUris, StringBuilder nTripleLines) throws IOException {
+		// TODO Temporary recursive implementation for dataset graph
+		float counterRequests = 0f;
+		int counterMulti = 0;
 
 		// Get source catalog(s)
 		if (nTripleLines.length() == 0) {
@@ -50,6 +114,8 @@ public class ElasticsearchQuery extends Elasticsearch {
 				searchRequests.add(searchRequest);
 			}
 
+			counterRequests += searchRequests.size();
+			counterMulti++;
 			for (SearchHit hit : multiSearchQuery(searchRequests)) {
 				Triple triple = new Triple();
 				triple.subject = (String) hit.getSourceAsMap().get("subject");
@@ -67,6 +133,8 @@ public class ElasticsearchQuery extends Elasticsearch {
 		}
 
 		// Extract data
+		counterRequests += searchRequests.size();
+		counterMulti++;
 		List<String> objects = new LinkedList<>();
 		for (SearchHit hit : multiSearchQuery(searchRequests)) {
 			Triple triple = new Triple();
@@ -76,15 +144,17 @@ public class ElasticsearchQuery extends Elasticsearch {
 			nTripleLines.append(triple.getNtriples());
 			nTripleLines.append(System.lineSeparator());
 
-			objects.add(triple.object);
+			if (!Triple.isLiteral(triple.object)) {
+				objects.add(triple.object);
+			}
 		}
 
 		// Recursively create graph
 		if (!objects.isEmpty()) {
-			calls += getDatasetGraph(objects, nTripleLines);
+			counterRequests += getDatasetGraphRecursive(objects, nTripleLines);
 		}
 
-		return calls;
+		return counterRequests + (1f * counterMulti / 1000);
 	}
 
 	public List<String> getAllDatasets() throws IOException {
@@ -191,8 +261,8 @@ public class ElasticsearchQuery extends Elasticsearch {
 	}
 
 	@Override
-	public ElasticsearchQuery createIndex() throws IOException {
-		super.createIndex();
+	public ElasticsearchQuery createIndex(boolean objectsAsText) throws IOException {
+		super.createIndex(objectsAsText);
 		return this;
 	}
 

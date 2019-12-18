@@ -44,7 +44,7 @@ public class Elasticsearch implements Closeable {
 		return this;
 	}
 
-	public Elasticsearch createIndex() throws IOException {
+	public Elasticsearch createIndex(boolean objectsAsText) throws IOException {
 		System.out.println(
 				"Creating index for " + getIndex() + " at " + getHttpHost() + " " + Elasticsearch.class.getName());
 
@@ -67,7 +67,11 @@ public class Elasticsearch implements Closeable {
 				builder.endObject();
 				builder.startObject("object");
 				{
-					builder.field("type", "text");
+					if (objectsAsText) {
+						builder.field("type", "text");
+					} else {
+						builder.field("type", "keyword");
+					}
 				}
 				builder.endObject();
 			}

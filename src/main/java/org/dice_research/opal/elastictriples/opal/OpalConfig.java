@@ -14,7 +14,7 @@ public class OpalConfig {
 	public static String elasticsearchHostname = "localhost";
 	public static int elasticsearchPort = 9200;
 
-	public static String elasticsearchIndex = "elastictriples-test";
+	public static String elasticsearchIndex = "elastictriples-edp";
 
 	public static ElasticsearchQuery elasticsearchQuery;
 

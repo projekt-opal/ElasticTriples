@@ -35,7 +35,7 @@ public class OpalImport {
 			}
 
 			if (!elasticsearchImporter.indexExists()) {
-				elasticsearchImporter.createIndex();
+				elasticsearchImporter.createIndex(true);
 			}
 
 			elasticsearchImporter.importFile(file, language);
@@ -48,8 +48,9 @@ public class OpalImport {
 	 * Example.
 	 */
 	public static void main(String[] args) throws Exception {
-		File file = new File("/tmp/test.nt");
+		File file = new File("/tmp/opal-rdf/edp.nt");
 		String language = "N-Triples";
+		OpalConfig.elasticsearchIndex = "elastictriples-edp";
 		new OpalImport().opalImport(file, language);
 	}
 }

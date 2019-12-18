@@ -46,4 +46,8 @@ public class Triple {
 	public String toString() {
 		return getNtriples();
 	}
+
+	public static boolean isLiteral(String string) {
+		return string.startsWith(LITERAL_PREFIX);
+	}
 }

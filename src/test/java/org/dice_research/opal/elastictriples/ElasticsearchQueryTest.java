@@ -69,25 +69,44 @@ public class ElasticsearchQueryTest {
 		System.out.println(datasets.get(1));
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void testGetDataset() throws Exception {
+		String dataset = "https://europeandataportal.eu/set/data/cz-00025712-cuzk_bu_549525";
+		dataset ="https://europeandataportal.eu/set/data/9a650b4f-c7b5-3be7-8e0f-36e77f4393a4";
+		boolean iterative = true;
 		Assume.assumeTrue(EXECUTE_QUERY_DATASET_GRAPH);
 		long time = System.currentTimeMillis();
-		String dataset = "http://projekt-opal.de/dataset/_mcloudde_baysisstraennetz";
-		dataset = "http://projekt-opal.de/dataset/https___ckan_govdata_de_1e19b5f3_5258_558c_8744_400e1727cab9";
 		StringBuilder nTripleLines = new StringBuilder();
 		List<String> datasetRequestUris = new LinkedList<>();
 		datasetRequestUris.add(dataset);
-		int calls = elasticsearchQuery.getDatasetGraph(datasetRequestUris, nTripleLines);
-		System.out.println(nTripleLines);
-		System.out.println("Request time: " + (System.currentTimeMillis() - time) / 1000f + " seconds");
+		float calls;
+		if (iterative) {
+			calls = elasticsearchQuery.getDatasetGraphIterative(datasetRequestUris.get(0), nTripleLines);
+			// Triples in model: 235
+			// Calls: 5066.003
+			// Request time: 8.726 seconds
+			// Overall time: 9.375 seconds
 
-		System.out.println("Calls: " + calls);
+		} else {
+			calls = elasticsearchQuery.getDatasetGraphRecursive(datasetRequestUris, nTripleLines);
+			// Triples in model: 235
+			// Calls: 5066.004
+			// Request time: 9.0 seconds
+			// Overall time: 9.733 seconds
+		}
+		System.out.println(nTripleLines);
+		float timeRequest = (System.currentTimeMillis() - time) / 1000f;
+
+		System.out.println();
 
 		Model model = new Serialization().deserialize(nTripleLines.toString());
 		System.out.println(model);
-		System.out.println("Triples in model: " + model.size());
 
+		System.out.println();
+		System.out.println("Triples in model: " + model.size());
+		System.out.println("Calls: " + calls);
+		System.out.println("Request time: " + timeRequest + " seconds");
 		System.out.println("Overall time: " + (System.currentTimeMillis() - time) / 1000f + " seconds");
 	}
 

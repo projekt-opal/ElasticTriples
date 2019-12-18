@@ -135,8 +135,8 @@ public class ElasticsearchImporter extends Elasticsearch {
 	}
 
 	@Override
-	public ElasticsearchImporter createIndex() throws IOException {
-		super.createIndex();
+	public ElasticsearchImporter createIndex(boolean objectsAsText) throws IOException {
+		super.createIndex(objectsAsText);
 		return this;
 	}
 
