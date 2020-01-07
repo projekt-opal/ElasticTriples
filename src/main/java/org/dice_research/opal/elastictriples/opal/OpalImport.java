@@ -12,6 +12,29 @@ import org.dice_research.opal.elastictriples.ElasticsearchImporter;
  */
 public class OpalImport {
 
+	/**
+	 * Example.
+	 */
+	public static void main(String[] args) throws Exception {
+
+		// Data to import
+		File file = new File("/tmp/opal-rdf/edp.nt");
+
+		// Data format
+		String language = "N-Triples";
+
+		// Elasticsearch service
+		OpalConfig.elasticsearchScheme = "http";
+		OpalConfig.elasticsearchHostname = "localhost";
+		OpalConfig.elasticsearchPort = 9200;
+
+		// Elasticsearch index
+		OpalConfig.elasticsearchIndex = "elastictriples-edp";
+
+		// Import data
+		new OpalImport().opalImport(file, language);
+	}
+
 	public void opalImport(File file, String language) throws Exception {
 
 		long time = System.currentTimeMillis();
@@ -42,15 +65,5 @@ public class OpalImport {
 		}
 
 		System.out.println("Import time: " + (System.currentTimeMillis() - time) / 1000f + " seconds");
-	}
-
-	/**
-	 * Example.
-	 */
-	public static void main(String[] args) throws Exception {
-		File file = new File("/tmp/opal-rdf/edp.nt");
-		String language = "N-Triples";
-		OpalConfig.elasticsearchIndex = "elastictriples-edp";
-		new OpalImport().opalImport(file, language);
 	}
 }

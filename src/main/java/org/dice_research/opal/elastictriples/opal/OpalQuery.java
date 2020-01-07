@@ -8,28 +8,23 @@ import org.dice_research.opal.elastictriples.ElasticsearchQuery;
 import org.dice_research.opal.elastictriples.Serialization;
 
 /**
- * Wrapper for OPAL queries.
+ * Wrapper for OPAL queries (Getting DCAT dataset graphs).
  *
  * @author Adrian Wilke
  */
 public class OpalQuery {
 
-	public static Model getDatasetGraph(ElasticsearchQuery elasticsearchQuery, String datasetUri) throws IOException {
-		StringBuilder nTripleLines = new StringBuilder();
-		elasticsearchQuery.getDatasetGraphIterative(datasetUri, nTripleLines);
-		return new Serialization().deserialize(nTripleLines.toString());
-	}
-
 	/**
-	 * Examples.
+	 * Example.
 	 */
 	public static void main(String[] args) throws Exception {
 
-		// Configuration
+		// Elasticsearch service
 		OpalConfig.elasticsearchScheme = "http";
 		OpalConfig.elasticsearchHostname = "localhost";
 		OpalConfig.elasticsearchPort = 9200;
 
+		// Elasticsearch index
 		OpalConfig.elasticsearchIndex = "elastictriples-edp";
 
 		// Get all dataset URIs
@@ -49,5 +44,11 @@ public class OpalQuery {
 			e.printStackTrace();
 		}
 
+	}
+
+	public static Model getDatasetGraph(ElasticsearchQuery elasticsearchQuery, String datasetUri) throws IOException {
+		StringBuilder nTripleLines = new StringBuilder();
+		elasticsearchQuery.getDatasetGraphIterative(datasetUri, nTripleLines);
+		return new Serialization().deserialize(nTripleLines.toString());
 	}
 }
