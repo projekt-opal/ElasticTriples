@@ -24,12 +24,13 @@ public class ElasticsearchQueryTest {
 	public static final boolean EXECUTE_TESTS = false;
 	public static final boolean EXECUTE_QUERY_DATASETS = false;
 	public static final boolean EXECUTE_QUERY_DATASET_GRAPH = false;
+	public static final boolean EXECUTE_FILTER_DATASETS = false;
 
 	public static String elasticsearchScheme = "http";
 	public static String elasticsearchHostname = "localhost";
 	public static int elasticsearchPort = 9200;
 
-	public static String elasticsearchIndex = "elastictriples-edp";
+	public static String elasticsearchIndex = "elastictriples-edp-deen";
 
 	private ElasticsearchQuery elasticsearchQuery;
 
@@ -72,10 +73,13 @@ public class ElasticsearchQueryTest {
 	@SuppressWarnings("deprecation")
 	@Test
 	public void testGetDataset() throws Exception {
-		String dataset = "https://europeandataportal.eu/set/data/cz-00025712-cuzk_bu_549525";
-		dataset ="https://europeandataportal.eu/set/data/9a650b4f-c7b5-3be7-8e0f-36e77f4393a4";
-		boolean iterative = true;
 		Assume.assumeTrue(EXECUTE_QUERY_DATASET_GRAPH);
+
+		String dataset = "https://europeandataportal.eu/set/data/cz-00025712-cuzk_bu_549525";
+		dataset = "https://europeandataportal.eu/set/data/9a650b4f-c7b5-3be7-8e0f-36e77f4393a4";
+		dataset = "https://europeandataportal.eu/set/data/7088d912-9a4a-3ff0-9aa8-257e7a48a4e0";
+		boolean iterative = true;
+
 		long time = System.currentTimeMillis();
 		StringBuilder nTripleLines = new StringBuilder();
 		List<String> datasetRequestUris = new LinkedList<>();
@@ -110,4 +114,13 @@ public class ElasticsearchQueryTest {
 		System.out.println("Overall time: " + (System.currentTimeMillis() - time) / 1000f + " seconds");
 	}
 
+	@Test
+	public void testFilterDatasets() throws Exception {
+		Assume.assumeTrue(EXECUTE_FILTER_DATASETS);
+
+		String dataset = "https://europeandataportal.eu/set/data/7088d912-9a4a-3ff0-9aa8-257e7a48a4e0";
+
+		Assert.assertTrue(elasticsearchQuery.isDatasetInLanguage(dataset, "de"));
+		Assert.assertFalse(elasticsearchQuery.isDatasetInLanguage(dataset, "en"));
+	}
 }

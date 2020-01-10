@@ -9,7 +9,8 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 
 /**
- * Executes multiple requests.
+ * Executes multiple requests. ("A BulkRequest can be used to execute multiple
+ * index, update and/or delete operations using a single request.")
  * 
  * Initialize with {@link #setElasticsearch(Elasticsearch)}.
  * 
@@ -20,6 +21,9 @@ import org.elasticsearch.client.RequestOptions;
  * 
  * Finally call {@link #finalRequest()}. If return value is true, call
  * {@link #getResponse()}.
+ * 
+ * @see https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-high-document-bulk.html
+ * @see https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/java-docs-bulk.html
  * 
  * @author Adrian Wilke
  */

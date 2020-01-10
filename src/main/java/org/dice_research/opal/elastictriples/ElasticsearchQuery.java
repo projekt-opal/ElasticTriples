@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.apache.http.HttpHost;
 import org.apache.jena.vocabulary.DCAT;
+import org.apache.jena.vocabulary.DCTerms;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.MultiSearchResponse;
@@ -17,6 +18,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -32,7 +34,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 public class ElasticsearchQuery extends Elasticsearch {
 
 	public float getDatasetGraphIterative(String datasetUri, StringBuilder nTripleLines) throws IOException {
-		// TODO Temporary recursive implementation for dataset graph
+		// Temporary recursive implementation for dataset graph
 		float counterRequests = 0f;
 		int counterMulti = 0;
 
@@ -95,7 +97,7 @@ public class ElasticsearchQuery extends Elasticsearch {
 	 * Use {@link #getDatasetGraphIterative(String, StringBuilder)} instead.
 	 */
 	public float getDatasetGraphRecursive(List<String> datasetUris, StringBuilder nTripleLines) throws IOException {
-		// TODO Temporary recursive implementation for dataset graph
+		// Temporary recursive implementation for dataset graph
 		float counterRequests = 0f;
 		int counterMulti = 0;
 
@@ -158,7 +160,7 @@ public class ElasticsearchQuery extends Elasticsearch {
 	}
 
 	public List<String> getAllDatasets() throws IOException {
-		// TODO Temporary implementation for dcat:Dataset
+		// Temporary implementation for dcat:Dataset
 		String object = DCAT.Dataset.toString();
 		MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery("object", object);
 		List<SearchHit> hits = scrollQuery(matchPhraseQueryBuilder);
@@ -171,12 +173,93 @@ public class ElasticsearchQuery extends Elasticsearch {
 		return datasets;
 	}
 
-	public SearchRequest createSearchRequest(String subject) {
-		// TODO Temporary implementation for subject search
-		MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery("subject", subject);
+	// TODO
+	public List<String> filterByLanguage(List<String> subjects, String languageTag) throws IOException {
+
+		List<SearchRequest> searchRequests = new LinkedList<>();
+		for (String subject : subjects) {
+			BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+			MatchPhraseQueryBuilder subjectBuilder = QueryBuilders.matchPhraseQuery("subject", subject);
+			boolQueryBuilder.must(subjectBuilder);
+			String predicate = DCTerms.title.toString();
+			MatchPhraseQueryBuilder predicateBuilder = QueryBuilders.matchPhraseQuery("predicate", predicate);
+			boolQueryBuilder.must(predicateBuilder);
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			sourceBuilder.query(boolQueryBuilder);
+			sourceBuilder.size(10000);
+
+			SearchRequest searchRequest = new SearchRequest(getIndex());
+			searchRequest.source(sourceBuilder);
+
+			searchRequests.add(searchRequest);
+		}
+
+		List<String> filteredUris = new LinkedList<>();
+		for (SearchHit searchHit : multiSearchQuery(searchRequests)) {
+			String object = searchHit.getSourceAsMap().get("object").toString();
+			if (object.endsWith("@" + languageTag)) {
+				filteredUris.add(searchHit.getSourceAsMap().get("subject").toString());
+			}
+		}
+		return filteredUris;
+
+	}
+
+	// TODO
+	public boolean isDatasetInLanguage(String subject, String languageTag) throws IOException {
+		// Temporary implementation for dcat:Dataset
+
+		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+		MatchPhraseQueryBuilder subjectBuilder = QueryBuilders.matchPhraseQuery("subject", subject);
+		boolQueryBuilder.must(subjectBuilder);
+		String predicate = DCTerms.title.toString();
+		MatchPhraseQueryBuilder predicateBuilder = QueryBuilders.matchPhraseQuery("predicate", predicate);
+		boolQueryBuilder.must(predicateBuilder);
+		// State: Not able to filter by '"@langTag'
+		// "does not support anchor operators, such as ^ [...] or $ (end of line)"
+		// "@ operator. You can use @ to match any entire string."
+		// https://www.elastic.co/guide/en/elasticsearch/reference/current/regexp-syntax.html
+		// RegexpQueryBuilder regexpQueryBuilder = QueryBuilders.regexpQuery("object",
+		// "\"@\"de");
+		// regexpQueryBuilder.flags(RegexpFlag.COMPLEMENT, RegexpFlag.EMPTY,
+		// RegexpFlag.INTERSECTION, RegexpFlag.INTERVAL);
+		// boolQueryBuilder.filter(regexpQueryBuilder);
 
 		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-		sourceBuilder.query(matchPhraseQueryBuilder);
+		sourceBuilder.query(boolQueryBuilder);
+		sourceBuilder.size(10000);
+
+		SearchRequest searchRequest = new SearchRequest(getIndex());
+		searchRequest.source(sourceBuilder);
+
+		SearchResponse searchResponse = getRestHighLevelClient().search(searchRequest, RequestOptions.DEFAULT);
+		if (searchResponse.getHits().getTotalHits().value == 0) {
+			return false;
+		} else {
+			String object = searchResponse.getHits().getHits()[0].getSourceAsMap().get("object").toString();
+			if (object.endsWith("@" + languageTag)) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+
+	public SearchRequest createSearchRequest(String subject) {
+		// Temporary implementation for subject search
+
+		QueryBuilder queryBuilder;
+		if (Boolean.FALSE) {
+			queryBuilder = QueryBuilders.matchPhraseQuery("subject", subject);
+		} else {
+			// https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html
+			// "keyword fields are better for term and other term-level queries"
+			queryBuilder = QueryBuilders.termQuery("subject", subject);
+		}
+
+		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+		sourceBuilder.query(queryBuilder);
 		sourceBuilder.size(10000);
 
 		SearchRequest searchRequest = new SearchRequest(getIndex());

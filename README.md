@@ -38,6 +38,12 @@ Splitting data is done by requesting single dataset graphs (each 2-3 seconds) an
 A code example is given in [OpalSplitter.java](src/main/java/org/dice_research/opal/elastictriples/opal/OpalSplitter.java).
 
 
+## Filter data
+
+Data can be filtered based on language tags of title literals.
+A code example is given in [OpalSplitter.java](src/main/java/org/dice_research/opal/elastictriples/opal/OpalFilter.java).
+
+
 ## Credits
 
 [Data Science Group (DICE)](https://dice-research.org/) at [Paderborn University](https://www.uni-paderborn.de/)
